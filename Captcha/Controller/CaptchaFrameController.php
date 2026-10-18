@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace AstrX\Controller;
+namespace AstrX\Captcha\Controller;
 
 use AstrX\Captcha\CaptchaService;
 use AstrX\Http\Request;
@@ -9,6 +9,7 @@ use AstrX\I18n\Translator;
 use AstrX\Result\DiagnosticsCollector;
 use AstrX\Result\Result;
 use AstrX\Routing\CurrentUrl;
+use AstrX\Kernel\AbstractController;
 
 /**
  * Serves the iframe content for the reloadable captcha widget.

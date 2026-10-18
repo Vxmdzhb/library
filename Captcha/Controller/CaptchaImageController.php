@@ -1,13 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace AstrX\Controller;
+namespace AstrX\Captcha\Controller;
 
 use AstrX\Captcha\CaptchaRenderer;
 use AstrX\Captcha\CaptchaRepository;
 use AstrX\Http\Request;
 use AstrX\Result\DiagnosticsCollector;
 use AstrX\Result\Result;
+use AstrX\Kernel\AbstractController;
 
 /**
  * Serves the captcha image as a raw PNG response.
