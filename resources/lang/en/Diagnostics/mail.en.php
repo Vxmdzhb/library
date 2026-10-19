@@ -75,8 +75,6 @@ return [
 
     // ── Trusted-sender database ───────────────────────────────────────────────
 
-
-
     // ── Mailer not configured ─────────────────────────────────────────────────
 
     'astrx.mail/not_configured' =>
@@ -90,9 +88,4 @@ return [
     'astrx.mail/error' =>
         fn(DiagnosticInterface $d, Translator $t): string =>
         'The message could not be sent. Please try again later.',
-
-    'astrx.email/template_missing' =>
-        fn(DiagnosticInterface $d, Translator $t): string =>
-        'The email template is missing, so no message was sent. '
-        . 'Check that resources/template/email/ is installed.',
 ];

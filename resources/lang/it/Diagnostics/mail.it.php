@@ -75,9 +75,6 @@ return [
 
     // ── Database dei mittenti attendibili ──────────────────────────────────────
 
-
-
-
     // ── Mailer non configurato ─────────────────────────────────────────────────
 
     'astrx.mail/not_configured' =>
@@ -91,9 +88,4 @@ return [
     'astrx.mail/error' =>
         fn(DiagnosticInterface $d, Translator $t): string =>
         'Impossibile inviare il messaggio. Riprova più tardi.',
-
-    'astrx.email/template_missing' =>
-        fn(DiagnosticInterface $d, Translator $t): string =>
-        'Il modello dell\'email è mancante, quindi non è stato inviato alcun messaggio. '
-        . 'Verifica che resources/template/email/ sia installato.',
 ];
