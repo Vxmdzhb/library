@@ -1,6 +1,6 @@
 # astrx/library
 
-Building blocks of [AstrX](https://github.com/hydrastro/astrx), on top of
+Building blocks of [AstrX](https://github.com/Vxmdzhb/astrx), on top of
 `astrx/framework`:
 
 - **Database** — the PDO connection factory and its diagnostics.
@@ -14,9 +14,26 @@ Building blocks of [AstrX](https://github.com/hydrastro/astrx), on top of
 `resources/` holds the captcha partial, the captcha catalog, these components'
 diagnostic messages (en, it) and their default configuration.
 
-```sh
-composer require astrx/library
+AstrX isn't on Packagist and doesn't tag versions: you install from each
+repository's `main`, and your `composer.lock` pins the exact commit. Tell
+Composer where to find the package and the AstrX packages it depends on:
+
+```json
+{
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "repositories": [
+        { "type": "vcs", "url": "https://github.com/Vxmdzhb/library" },
+        { "type": "vcs", "url": "https://github.com/Vxmdzhb/framework" }
+    ]
+}
 ```
 
-Development happens in the [main repository](https://github.com/hydrastro/astrx);
-this package is published from its `packages/library` directory.
+Then:
+
+```sh
+composer require astrx/library:dev-main
+```
+
+Issues and pull requests are welcome here. [AstrX](https://github.com/Vxmdzhb/astrx)
+is the site that puts all the packages together.
