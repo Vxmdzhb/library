@@ -36,11 +36,10 @@ interface IdenticonTileInterface
     : void;
 
     /**
-     * Allocate a GD color on the tile's canvas.
-     * Applies a contrast adjustment: if all channels are >= 0xC0 (near-white),
-     * bits from the channel sum are used to invert individual channels so the
-     * color is always distinguishable from the white background.
-     * @return int GD color identifier
+     * Allocate a GD colour on the tile's canvas. Near-white colours (every
+     * channel >= 0xC0) get channels inverted, using bits of the channel sum, so
+     * the colour always stands out from the white background.
+     * @return int GD colour identifier
      */
     public function getColor(int $r, int $g, int $b)
     : int;

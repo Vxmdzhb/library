@@ -4,16 +4,15 @@ declare(strict_types=1);
 namespace AstrX\Auth;
 
 /**
- * Optional resource-level policy interface.
+ * Optional resource-level policy.
  *
- * When Gate::can($permission, $resource) is called, Gate checks whether
- * a Policy exists for the resource type and delegates to it if so.
- * The role-level permission check must PASS first — policies can only
- * further restrict, never grant access that roles deny.
+ * When Gate::can($permission, $resource) is called, Gate looks for a policy
+ * for the resource's type and asks it. The role-level check must pass first:
+ * a policy can only restrict, never grant what the role denies.
  *
  * A policy answers for exactly the permissions it lists in governs(). Gate
- * refuses any resource-scoped check whose permission is NOT in that list, so a
- * permission the policy never considered can no longer fall through to "allow".
+ * refuses any resource check whose permission isn't in that list, so a
+ * permission the policy never considered can't fall through to "allow".
  */
 interface PolicyInterface
 {

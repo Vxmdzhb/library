@@ -106,19 +106,11 @@ final class Gate
             return true;
         }
 
-        // 3. A resource-scoped check is a request for a resource-level ruling.
-        //    If nothing can rule — no policy registered for the class, or a
-        //    policy that does not list this permission in governs() — we DENY
-        //    rather than fall through to the role decision.
-        //
-        //    This is the shape the UserPolicy bug had: AdminUsersController
-        //    passed a `(object) $userRow` (a \stdClass, registered to
-        //    CommentPolicy), asked for UserPermission::EDIT_ANY, CommentPolicy
-        //    had no arm for it, and the old code read that silence as "no
-        //    opinion" and allowed the edit — so the guard documented as
-        //    "mods cannot edit admins" never executed once. Denying here means
-        //    the next such mis-binding fails visibly on the first request
-        //    instead of quietly granting the permission for years.
+        // 3. A check with a resource asks for a resource-level ruling. If nothing can
+        //    rule (no policy for the class, or a policy that doesn't list this
+        //    permission in governs()), deny rather than fall back to the role
+        //    decision. A resource bound to the wrong policy then fails visibly on the
+        //    first request instead of quietly granting the permission.
         $policy = $this->findPolicy($resource);
         if ($policy === null || !in_array($permission, $policy->governs(), true)) {
             return false;

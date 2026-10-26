@@ -53,7 +53,7 @@ final class ImapClient
     private bool   $verifySsl   = true;
 
     /**
-     * Whether to trust a "* PREAUTH" greeting (R4-25a). A PREAUTH greeting means
+     * Whether to trust a "* PREAUTH" greeting. A PREAUTH greeting means
      * the server considers the connection already authenticated (e.g. a trusted
      * local pipe or client-cert transport). Trusting it blindly lets a hostile
      * or MITM'd server skip LOGIN *and* skip the STARTTLS upgrade, so it is only
@@ -112,7 +112,7 @@ final class ImapClient
             if (!str_starts_with($greeting, '* OK') && !str_starts_with($greeting, '* PREAUTH')) {
                 return $this->err('connect', "Unexpected greeting: $greeting");
             }
-            // R4-25a: only treat PREAUTH as already-authenticated when explicitly
+            // Only treat PREAUTH as already-authenticated when explicitly
             // configured. Otherwise ignore the assertion and continue as for a
             // plain greeting, so a hostile/MITM server cannot use PREAUTH to skip
             // the STARTTLS upgrade below or the LOGIN credential exchange.
@@ -301,7 +301,7 @@ final class ImapClient
         $parsed['flags'] = $flags;
         $parsed['seen']  = in_array('\\Seen', $flags, true);
 
-        // M6: if the MIME walk hit the depth/parts bound, the message is still
+        // If the MIME walk hit the depth/parts bound, the message is still
         // usable but incomplete — surface a non-fatal warning alongside it.
         if ($this->mimeLimitHit) {
             return Result::ok($parsed, Diagnostics::of(
@@ -495,16 +495,15 @@ final class ImapClient
             throw new \RuntimeException("SOCKS5 CONNECT refused");
         }
         if ($this->encryption === 'ssl') {
-            // H7: pin peer_name + verification on the tunnelled stream BEFORE
-            // the handshake, then capture the result and FAIL CLOSED. Without
-            // this the client would silently continue and LOGIN over an
-            // unencrypted / unauthenticated channel.
+            // Pin peer_name and verification on the tunnelled stream before the
+            // handshake, then check the result and fail closed: never LOGIN over an
+            // unencrypted or unauthenticated channel.
             $this->applyTlsContext($proxy);
             // @-suppress: a TLS-handshake failure raises E_WARNING, which the
             // ErrorHandler turns into a forced 500 that no try/catch can rescue —
             // defeating the intended graceful "re-login" degradation on the onion
             // IMAPS path. The !== true check still fails closed (R7-02, matching
-            // Mailer). R10.
+            // Mailer)..
             if (@stream_socket_enable_crypto($proxy, true, STREAM_CRYPTO_METHOD_TLS_CLIENT) !== true) {
                 throw new \RuntimeException('IMAP TLS handshake over SOCKS5 proxy failed');
             }
@@ -521,12 +520,12 @@ final class ImapClient
         if ($socket === null) {
             return $this->err('starttls', 'IMAP socket is not connected');
         }
-        // H7: pin the certificate to the configured host and honour
+        // Pin the certificate to the configured host and honour
         // imap_verify_ssl before upgrading the plaintext IMAP stream to TLS.
         $this->applyTlsContext($socket);
         // @-suppress the handshake warning (else the ErrorHandler forces a 500
         // that defeats the graceful re-login path); the boolean check still fails
-        // closed before any cleartext LOGIN (R7-02, matching Mailer). R10.
+        // closed before any cleartext LOGIN (matching Mailer)..
         if (!@stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
             return $this->err('starttls', 'TLS negotiation failed');
         }
@@ -643,12 +642,11 @@ final class ImapClient
                     continue;
                 }
 
-                // Otherwise (ENVELOPE etc.) the literal is a value embedded mid
-                // logical-line — e.g. a subject or from-name the server chose to
-                // send as a literal. R4-25b: splice it back inline (as a quoted
-                // string the envelope tokeniser understands) and reassemble the
-                // continuation, which may itself end in a further literal, so the
-                // field is no longer lost to "(no subject)"/dropped sender.
+                // Otherwise (ENVELOPE etc.) the literal is a value in the middle of a line,
+                // such as a subject or sender name the server chose to send as a literal.
+                // Splice it back in as a quoted string the envelope tokeniser understands and
+                // reassemble the continuation (which may end in another literal), so the
+                // field isn't lost.
                 $assembled = $this->reassembleLiteralLine($line, $literalContent);
                 if ($assembled === false) {
                     return $tag . ' BAD literal too large';
@@ -671,10 +669,9 @@ final class ImapClient
 
     /**
      * Reassemble a logical response line whose first literal has already been
-     * read (its bytes passed in $firstLiteral). Splices each literal inline as a
-     * quoted string and appends the continuation segment that follows it,
-     * resolving any further embedded literals, until the line no longer ends in
-     * a "{N}" marker. Returns false if a continuation literal exceeds the cap.
+     * read ($firstLiteral). Each literal is spliced in as a quoted string and the
+     * continuation after it appended, until the line no longer ends in "{N}".
+     * Returns false if a continuation literal is over the size cap.
      */
     private function reassembleLiteralLine(string $line, string $firstLiteral): string|false
     {
@@ -725,36 +722,30 @@ final class ImapClient
         if ($this->socket === null) {
             throw new \RuntimeException("Not connected");
         }
-        // R11: '@' so a broken-pipe write (peer RST) can't emit an E_WARNING →
+        // '@' so a broken-pipe write (peer RST) can't emit an E_WARNING →
         // forced HTTP 500 (the ErrorHandler cannot be try/caught). Connection loss
         // still surfaces through the Result flow / the 'Not connected' guard.
         @fwrite($this->socket, $data);
     }
 
     /**
-     * Write a full command line that may contain synchronizing IMAP literals,
-     * performing the RFC 3501 §4.3 continuation handshake for each one.
+     * Write a command line that may contain synchronizing IMAP literals,
+     * performing the RFC 3501 §4.3 continuation handshake for each.
      *
-     * quoteString() renders a value that cannot be a quoted string (it contains
-     * NUL, CR, LF, '"' or '\') as a *synchronizing* literal: the marker
-     * "{N}\r\n" immediately followed by N raw octets. Those octets MUST NOT be
-     * put on the wire until the server answers the marker with a command
-     * continuation request ("+ …"); sending them inline (as the old single
-     * writeLine did) can make an RFC-strict server hang or reject the command.
-     * This is the same "+" handshake appendToSent() already performs for APPEND.
+     * quoteString() renders a value that can't be a quoted string (it contains
+     * NUL, CR, LF, '"' or '\') as a synchronizing literal: "{N}\r\n" followed by N
+     * raw octets. The octets may only be sent once the server has answered the
+     * marker with a continuation request ("+ …"); a strict server can hang or
+     * reject the command otherwise. appendToSent() does the same for APPEND.
      *
-     * The line is split at each literal boundary: flush up to and including the
-     * "{N}\r\n" marker, block for the "+" line, send exactly N octets, then
-     * resume scanning *after* those octets. Because we advance by the declared
-     * byte length (never by re-scanning payload), literal payload bytes that
-     * themselves look like "{…}\r\n" or contain CRLF are treated as data, not as
-     * a marker; and since the literal is length-delimited and never parsed, no
-     * command injection is possible. A literal-free command matches no marker
-     * and is written in a single shot, exactly as before.
+     * The line is split at each literal: send up to and including the marker,
+     * wait for "+", send exactly N octets, then carry on after them. Advancing by
+     * the declared length means payload bytes that look like a marker, or contain
+     * CRLF, are treated as data, so no command injection is possible. A line
+     * without literals is written in one go.
      *
-     * @return string|null null once the whole line (plus terminating CRLF) has
-     *                     been sent; otherwise the server's rejection line if it
-     *                     answered a marker with something other than "+".
+     * @return string|null null once the whole line (and its CRLF) is sent;
+     *                     otherwise the server's line rejecting a marker.
      */
     private function sendCommandLine(string $full): ?string
     {
@@ -960,7 +951,7 @@ final class ImapClient
     // MIME message parsing
     // =========================================================================
 
-    // ── MIME parsing bounds (M6) ───────────────────────────────────────────────
+    // ── MIME parsing bounds ───────────────────────────────────────────────
     // A crafted message can nest multipart/* indefinitely (stack exhaustion) or
     // carry an absurd number of parts (CPU/memory). Bound both and parse what
     // fits, flagging truncation via $mimeLimitHit.
@@ -1030,7 +1021,7 @@ final class ImapClient
         $textBody = '';
         $htmlBody = '';
 
-        // M6: stop descending once the structure is unreasonably deep — return
+        // Stop descending once the structure is unreasonably deep — return
         // whatever has been parsed rather than recursing without bound.
         if ($depth > self::MAX_MIME_DEPTH) {
             $this->mimeLimitHit = true;
@@ -1039,7 +1030,7 @@ final class ImapClient
 
         $parts = $this->splitMultipart($body, $boundary);
         foreach ($parts as $part) {
-            // M6: cap the total number of parts examined across the whole tree.
+            // Cap the total number of parts examined across the whole tree.
             if (++$this->mimePartsSeen > self::MAX_MIME_PARTS) {
                 $this->mimeLimitHit = true;
                 break;

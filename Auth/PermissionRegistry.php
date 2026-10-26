@@ -6,11 +6,10 @@ namespace AstrX\Auth;
 /**
  * Every permission the application knows, across all features.
  *
- * Built by the composition root from the always-on features' permission enums
- * and EVERY module manifest's `permissions` key — disabled modules included.
- * The grants editor rebuilds a role's grant list from this set when it saves,
- * so a module missing from it would have its grants silently erased by the
- * next save while it was switched off.
+ * Built by the composition root from the always-on features' enums and every
+ * module manifest's `permissions` key, disabled modules included. The grants
+ * editor rebuilds a role's grants from this set when it saves, so a module
+ * left out would lose its grants on the next save while switched off.
  */
 final class PermissionRegistry
 {

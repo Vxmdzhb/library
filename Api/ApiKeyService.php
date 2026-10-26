@@ -90,18 +90,13 @@ final class ApiKeyService
     // -------------------------------------------------------------------------
 
     /**
-     * Validate a raw bearer key. On success returns the owning user\'s hex ID.
-     * On failure returns null. Updates last_used_at on successful lookup.
+     * Validate a raw bearer key: the owning user's hex id, or null. Updates
+     * last_used_at on success.
      *
-     * Failure modes (all return null, no diagnostic — leaking why-auth-failed
-     * to the network is a side-channel):
-     *   - malformed key format
-     *   - no matching hash
-     *   - revoked = 1
-     *   - expires_at in the past
-     *
-     * Returns null silently. The caller (ContentManager api dispatch) emits
-     * a generic UnauthorizedDiagnostic — uniform for any reason.
+     * Every failure returns null with no diagnostic (a malformed key, no
+     * matching hash, a revoked or expired key), so the network can't learn why
+     * authentication failed. The caller answers with one generic
+     * UnauthorizedDiagnostic.
      */
     public function validate(string $rawKey): ?string
     {

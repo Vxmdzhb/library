@@ -118,26 +118,15 @@ final class Mailer
     // =========================================================================
 
     /**
-     * Send a plain-text email.
-     * @return Result<bool>
-     */
-    /**
      * Send an email.
      *
-     * @param string $fromAddressOverride  When non-empty, overrides the configured
-     *                                     from_address for this message only.
-     *                                     Used by webmail to send as the logged-in user.
-     * @param string $fromNameOverride     Paired display name override.
-     */
-/** @return Result<bool> */
-    /**
-     * Send an email.
-     *
+     * @param string $fromAddressOverride  When non-empty, replaces the configured
+     *                                     from_address for this message (webmail
+     *                                     sends as the logged-in user).
+     * @param string $fromNameOverride     The matching display name.
      * @param list<array{filename:string,content_type:string,data:string}> $attachments
-     *         Optional attachments. Each entry has:
-     *         - filename     : displayed name in the receiving client
-     *         - content_type : MIME type (e.g. 'application/pdf')
-     *         - data         : RAW bytes (not base64; we encode internally)
+     *        Optional attachments: the name shown to the recipient, the MIME
+     *        type, and the raw bytes (encoded here).
      * @return Result<bool>
      */
     public function send(
@@ -201,7 +190,7 @@ final class Mailer
         $effectiveFromAddress = $fromAddressOverride !== '' ? $fromAddressOverride : $this->fromAddress;
         $effectiveFromName    = $fromAddressOverride !== '' ? $fromNameOverride    : $this->fromName;
 
-        // ── SMTP header / command injection defence (H2) ─────────────────────
+        // ── SMTP header / command injection defence ─────────────────────
         // A CR/LF/NUL in any envelope address would let a caller inject extra
         // SMTP commands (RCPT TO smuggling) once written to the socket; the same
         // bytes in a display name or subject forge mail headers. Validate the
@@ -218,7 +207,7 @@ final class Mailer
                 return $this->invalidRecipient($headerText);
             }
         }
-        // Cc/Bcc envelope recipients (F-07): validate each before dialing.
+        // Cc/Bcc envelope recipients: validate each before dialing.
         $ccList  = $this->parseAddressList($cc);
         $bccList = $this->parseAddressList($bcc);
         foreach (array_merge($ccList, $bccList) as $extraAddr) {
@@ -242,7 +231,7 @@ final class Mailer
             }
             $this->cmd($sock, "STARTTLS");
             $this->read($sock, '220');
-            // H7: pin the certificate to the configured host (SNI + peer_name)
+            // Pin the certificate to the configured host (SNI + peer_name)
             // and honour smtp_verify_ssl BEFORE upgrading the plaintext socket.
             $this->applyTlsContext($sock);
             // @-suppress: a TLS-handshake failure raises E_WARNING, which the
@@ -311,7 +300,7 @@ final class Mailer
         $this->cmd($sock, "RCPT TO:<{$toAddress}>");
         $this->read($sock, '25');   // 250 or 251
 
-        // Deliver to every Cc and Bcc recipient too (F-07). Bcc addresses are
+        // Deliver to every Cc and Bcc recipient too. Bcc addresses are
         // RCPT'd here but deliberately NOT emitted as a header below. A rejected
         // SECONDARY recipient must NOT abort delivery to the accepted ones (the
         // primary To already succeeded above), so skip a failed cc/bcc and carry on.
@@ -407,7 +396,7 @@ final class Mailer
 
         if ($this->encryption === 'ssl' && $this->socks5Host !== '') {
             // Wrap in TLS after the SOCKS5 tunnel is open (implicit TLS).
-            // H7: pin peer_name + verification on the tunnelled stream first,
+            // Pin peer_name + verification on the tunnelled stream first,
             // then capture the handshake result and fail closed. A failed or
             // unverified handshake must never fall through to a cleartext send;
             // the throw is converted to Result::err() by send()'s catch.
@@ -598,7 +587,7 @@ final class Mailer
     : string {
         if ($fromAddress === '') { $fromAddress = $this->fromAddress; }
         if ($fromName    === '') { $fromName    = $this->fromName; }
-        // Escape the quoted display name (F-24): a " or \ would otherwise break
+        // Escape the quoted display name: a " or \ would otherwise break
         // the quoted-string and could forge trailing header tokens. headerSafe()
         // already blocked CR/LF/NUL upstream.
         $from = $fromName !== '' ?

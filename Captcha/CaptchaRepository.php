@@ -27,23 +27,10 @@ final class CaptchaRepository
      */
     public function store(string $id, string $text, int $expiresAt): Result
     {
-        // Store the captcha answer as PLAINTEXT (lower-cased so verification
-        // can do a straight case-insensitive compare).
-        //
-        // History: an earlier revision SHA-256-hashed the text "for security".
-        // That had three problems:
-        //   1. SHA-256 hex is 64 chars but `captcha`.`text` is VARCHAR(32) →
-        //      every INSERT silently truncated, breaking verification AND
-        //      failing the INSERT under MariaDB strict mode.
-        //   2. The same plaintext answer is rendered into the image we send
-        //      to the browser, so any "DB-only attacker who can read this
-        //      column" can equally well OCR a screenshot of the form. The
-        //      hash protected nothing.
-        //   3. Iframe-reloadable captchas need to re-render the image on
-        //      demand from the stored answer — impossible from a one-way
-        //      hash.
-        //
-        // Plaintext it is. The whole row expires in 10 minutes anyway.
+        // Store the answer as plaintext, lower-cased so verification is a simple
+        // case-insensitive compare. Hashing would protect nothing (the same answer
+        // is drawn in the image we send), and the reloadable captcha needs the text
+        // to redraw the image. Rows expire after 10 minutes.
         $plain = strtolower($text);
         try {
             $stmt = $this->pdo->prepare(
@@ -126,23 +113,15 @@ final class CaptchaRepository
     }
 
     /**
-     * Delete all expired captcha tokens.
-     * Called opportunistically on generate() to keep the table clean.
+     * Replace the answer text of an existing captcha, atomically.
      *
-     * @return Result<int> Number of rows deleted.
-     */
-    /**
-     * Replace the answer text for an existing captcha row, atomically.
+     * The id stays the same, so the parent form's hidden input stays valid; only
+     * the text to type changes.
      *
-     * The captcha id stays the same so the parent form's hidden input
-     * remains valid; only the text the user is supposed to type changes.
-     *
-     * Abuse prevention is baked into the UPDATE itself: the WHERE clause
-     * requires regen_count < :max AND last_regen_at IS NULL OR older than
-     * :cooldown seconds. If either condition fails, the UPDATE matches
-     * zero rows — the caller sees rowCount() === 0 and treats it as "no-op,
-     * use the current image". This makes the limit race-free under concurrent
-     * refresh attempts without needing an explicit lock.
+     * The rate limit is part of the UPDATE: it only matches when regen_count <
+     * :max and last_regen_at is null or older than :cooldown seconds. Otherwise
+     * it matches no row, and the caller keeps the current image. No lock needed,
+     * even with concurrent refreshes.
      *
      * @return Result<bool>  true if the row was regenerated, false if rate-limited.
      */
@@ -181,7 +160,12 @@ final class CaptchaRepository
         }
     }
 
-    /** @return Result<int> */
+    /**
+     * Delete expired captchas. generate() calls it now and then to keep the
+     * table small.
+     *
+     * @return Result<int> Number of rows deleted.
+     */
     public function deleteExpired(): Result
     {
         try {

@@ -122,11 +122,10 @@ final class CaptchaRenderer
     #[InjectConfig('font_file')]
     public function setFontFile(string $v): void
     {
-        // Store the configured value verbatim (do NOT reject non-existent paths
-        // here): a config may carry a deploy-specific absolute path — e.g. a
-        // Docker "/app/resources/fonts/…" — that is absent on a bare CI runner.
-        // fontPath() does the real resolution and falls back to the bundled
-        // font by basename, so a wrong absolute path no longer breaks rendering.
+        // Store the configured value as is, even if the path doesn't exist here: a
+        // config may carry a deployment's absolute path (e.g. Docker's
+        // "/app/resources/fonts/…") that is missing on a CI runner. fontPath() does
+        // the real resolution and falls back to the bundled font by name.
         if ($v !== '') {
             $this->fontFile = $v;
         }

@@ -81,14 +81,10 @@ final class ConnectionFactory
         // every schema AstrX ships is MySQL/MariaDB DDL.
         $driver = $this->config->getConfigString('PDO', 'db_type', 'mysql');
 
-        // The credentials have NO fallback, deliberately. The removed defaults
-        // ('localhost' / 'content_manager' / 'user' / 'password') turned "this
-        // install has no PDO.config.php" — the normal state of a fresh checkout,
-        // since the file is gitignored — into "silently try a guessable account
-        // against whatever is listening on localhost", and then reported the
-        // resulting auth failure as though the configuration had been read.
-        // Reading with no default also has Config emit its own
-        // astrx.config/get_config.not_found for each absent key, naming it.
+        // No fallback credentials, on purpose: with no PDO.config.php (normal for a
+        // fresh checkout, the file is gitignored) nothing is dialled, instead of
+        // trying a guessable account on localhost. Reading without a default also
+        // makes Config report each missing key by name.
         $hostRaw     = $this->config->getConfig('PDO', 'db_host');
         $dbnameRaw   = $this->config->getConfig('PDO', 'db_name');
         $usernameRaw = $this->config->getConfig('PDO', 'db_username');
@@ -134,9 +130,9 @@ final class ConnectionFactory
         $portPart = $port > 0 ? ';port=' . $port : '';
         $dsn = $driver . ':host=' . $host . $portPart . ';dbname=' . $dbname . ';charset=utf8mb4';
 
-        // getConfigBool, not getConfig+assert: assertions are compiled out in
-        // production (zend.assertions=-1), so a hand-edited 'false' in
-        // PDO.config.php used to reach setAttribute() as the truthy string it is.
+        // getConfigBool, not getConfig plus an assertion: assertions are compiled out
+        // in production, and a hand-edited 'false' must not reach setAttribute() as a
+        // truthy string.
         $emulate    = $this->config->getConfigBool('PDO', 'emulate_prepares', false);
         $errExc     = $this->config->getConfigBool('PDO', 'errmode_exception', true);
         $fetchAssoc = $this->config->getConfigBool('PDO', 'default_fetch_assoc', true);

@@ -14,19 +14,17 @@ use AstrX\Result\Result;
 /**
  * Creates and removes mailboxes on the Dovecot server.
  *
- * OPTIONAL, separate-Dovecot deployment mode only. IMPORTANT: the core
- * registration / account-delete / password-change flows do NOT call these
- * methods automatically — a deployment that wants mailbox provisioning must wire
- * createMailbox()/deleteMailbox()/changePassword() into RegisterController, the
- * account-delete path, and settings respectively. They are intentionally
- * decoupled so the default single-app deployment carries no mail-server
- * dependency. (Previously this docblock claimed the wiring existed; it did not.)
+ * Only for deployments with a separate Dovecot. Nothing calls these methods
+ * by default: to provision mailboxes, wire createMailbox(), deleteMailbox()
+ * and changePassword() into registration, account deletion and settings.
+ * Keeping them separate means the default deployment has no mail server
+ * dependency.
  *
- * This class communicates with a small management API running inside the
- * mail containers (see docker/mailapi/). The API is only reachable within
- * the Docker network — never exposed to the internet.
- * Alternatively, if the web app runs on the SAME Docker network as Dovecot,
- * it can write directly to the Dovecot passwd file.
+ * It talks to a small management API inside the mail containers (see
+ * docker/mailapi/), reachable only on the Docker network. If the web app
+ * shares that network with Dovecot, it can write the Dovecot passwd file
+ * directly instead.
+ *
  * Config (Mail.config.php):
  *   mailbox_domain   The mail domain for new mailboxes (e.g. 'xyz.onion')
  *   mailapi_url      URL of the management API (e.g. 'http://mailapi:8080')

@@ -6,14 +6,9 @@ namespace AstrX\Auth;
 /**
  * A resource-level policy's ruling on one permission check.
  *
- * Replaces the old `?bool` return of PolicyInterface::evaluate(), where `null`
- * meant "no opinion". That encoding was dangerous in combination with the
- * `default => null` arm every policy carried: a permission a policy had simply
- * FORGOTTEN produced the same value as a permission it had deliberately
- * declined to rule on, and both resolved to "the role decision stands" — i.e.
- * allow. Three named cases make the deliberate abstention explicit and let
- * Gate treat "this policy has no rule for this permission" (see
- * PolicyInterface::governs()) as a denial instead of an accident.
+ * Three named cases instead of a nullable bool: abstaining on purpose is
+ * Abstain, while "this policy has no rule for this permission" (see
+ * PolicyInterface::governs()) is something Gate can tell apart and deny.
  */
 enum PolicyVerdict
 {

@@ -7,18 +7,12 @@ use AstrX\Result\AbstractDiagnostic;
 use AstrX\Result\DiagnosticLevel;
 
 /**
- * Emitted when resources/config/PDO.config.php does not declare every
+ * Emitted when resources/config/PDO.config.php doesn't declare every
  * credential the connection needs.
  *
- * It carries the missing KEY NAMES only. There is no accessor for the values
- * that were present, on purpose: this diagnostic exists precisely because a
- * connection was NOT attempted, and the thing an operator has to be told is
- * which line to add — never what the other lines currently say.
- *
- * The file is in .gitignore (credentials do not belong in the tree), so "the
- * section is absent entirely" is the normal state of a fresh checkout. That
- * used to resolve to a hardcoded 'user'/'password'/'localhost' guess; naming
- * the gap is the whole point.
+ * It carries the missing key names only, never the values that were there:
+ * what the operator needs is which line to add. The file is gitignored, so on
+ * a fresh checkout the whole section is missing, and no connection is tried.
  */
 final class DatabaseConfigIncompleteDiagnostic extends AbstractDiagnostic
 {

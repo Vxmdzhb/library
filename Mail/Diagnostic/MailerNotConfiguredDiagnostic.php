@@ -6,12 +6,9 @@ namespace AstrX\Mail\Diagnostic;
 use AstrX\Result\AbstractDiagnostic;
 
 /**
- * Emitted when the framework would send an email but no mailer is wired.
- * Used by RegisterController when generating verification tokens that should
- * have been emailed.
- *
- * Visible to admins in the diagnostics panel so pending verifications are
- * not silently lost. Replace with a working mailer integration to silence.
+ * Emitted when the framework would send an email but no mailer is set up,
+ * e.g. a verification token that should have been mailed. Shown to admins in
+ * the diagnostics panel, so pending verifications aren't lost silently.
  */
 final class MailerNotConfiguredDiagnostic extends AbstractDiagnostic
 {

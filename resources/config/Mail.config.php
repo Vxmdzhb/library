@@ -37,14 +37,9 @@ return [
         // PREAUTH to skip credentials. Only enable for a trusted local IMAP.
         'imap_allow_preauth' => (getenv('IMAP_ALLOW_PREAUTH') ?: 'false') === 'true',
     ],
-    // AstrX\Mail\MailboxManager. This section was missing from the shipped file
-    // even though the class declares #[InjectConfig] setters for all three keys
-    // and the admin Mail page writes them here: Config::applyConfigToInstance()
-    // skips a setter whose key is absent, so on a fresh install every setter
-    // silently no-op'd and MailboxManager built addresses as "user@" (empty
-    // domain) until an admin happened to open the Mail page and press Save.
-    // Defaults match the class's own field defaults, so declaring them changes
-    // nothing until the operator sets the env vars or edits this file.
+    // AstrX\Mail\MailboxManager. These keys must be present: a setter whose key
+    // is missing never runs. The defaults match the class's own, so nothing
+    // changes until the operator sets the environment variables or edits them.
     'MailboxManager' => [
         // Domain appended to a username to form its mailbox address.
         'mailbox_domain' => getenv('MAILBOX_DOMAIN') ?: '',

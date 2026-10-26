@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 return [
     'CaptchaService' => [
-        // Iframe reload abuse policy (fix105):
+        // Iframe reload abuse policy:
         // max_regens     = hard cap on the number of times a single captcha
         //                  id can be reloaded. Past this, refresh is a no-op
         //                  and the iframe keeps showing the previous image.
