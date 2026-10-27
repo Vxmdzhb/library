@@ -1,6 +1,7 @@
 {
     "name": "astrx/library",
     "description": "AstrX building blocks: database connection, authorization gate, API keys, captcha, images, identicons and mail",
+    "license": "LicenseRef-DoWhatever",
     "type": "library",
     "keywords": [
         "astrx",
